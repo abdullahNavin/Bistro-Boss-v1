@@ -23,12 +23,14 @@ const client = new MongoClient(uri, {
 
 const menuCollection = client.db('Bistro-Boss-v1').collection('menu')
 const cartCollection = client.db('Bistro-Boss-v1').collection('cart')
+const userCollection = client.db('Bistro-Boss-v1').collection('user')
 
 
 app.get('/menu', async (req, res) => {
     const result = await menuCollection.find().toArray()
     res.send(result)
 })
+// cart section
 app.post('/cart', async (req, res) => {
     const cartItem = req.body;
     const result = await cartCollection.insertOne(cartItem)
@@ -40,12 +42,45 @@ app.get('/cart', async (req, res) => {
     const result = await cartCollection.find(query).toArray()
     res.send(result)
 })
-app.delete('/cart/:id', async(req,res)=>{
+app.delete('/cart/:id', async (req, res) => {
     const id = req.params.id;
-    const query = {_id: new ObjectId(id)}
+    const query = { _id: new ObjectId(id) }
     const result = await cartCollection.deleteOne(query)
     res.send(result)
 })
+
+// user section
+app.post('/user', async (req, res) => {
+    const userInfo = req.body;
+    const query = { email: userInfo.email }
+    const isValid = await userCollection.findOne(query)
+    if (isValid) {
+        return res.send({ message: 'user alrady exist is database', insertedId: true })
+    }
+    const result = await userCollection.insertOne(userInfo)
+    res.send(result)
+})
+app.get('/user', async (req, res) => {
+    const result = await userCollection.find().toArray()
+    res.send(result)
+})
+app.delete('/user/:email', async (req, res) => {
+    const email = req.params.email;
+    const filter = { email: email }
+    const deleteUserCart = await cartCollection.deleteMany(filter)
+    const result = await userCollection.deleteOne(filter)
+    res.send(result)
+})
+app.patch('/user/:id', async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) }
+    const updateRole = {
+        $set: { role: 'admin' }
+    }
+    const result = await userCollection.updateOne(filter,updateRole)
+    res.send(result)
+})
+
 
 // mongodb funtion
 async function run() {
